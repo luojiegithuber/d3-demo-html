@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<canvas width="960" height="600"></canvas>
+<button onclick="addNode()">添加节点</button>
+<button onclick="findNode()">寻找id为20的节点高亮</button>
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<script>
+var curNode;
+var graph;
+var radius = 5;
+var canvas = document.querySelector("canvas"),
+    context = canvas.getContext("2d"),
+    width = canvas.width,
+    height = canvas.height;
+
+var colors = d3.scaleOrdinal(d3.schemeCategory10);
+
+for(let i in [0,0,0,0,0,0,0,0,0]){
+  console.log(colors(i))
+}
+
+var simulation = d3.forceSimulation() // 创建一个新的力学仿真.
+    .force("link", d3.forceLink().id(function(d) { return d.id; })) // 添加或移除一个力模型.（这里是连接力）
+    .force("charge", d3.forceManyBody())// 排斥力
+    .force("center", d3.forceCenter(width / 2, height / 2)); // 定位到画布中央
+
+var transform = d3.zoomIdentity;
+
+d3.json("miserables.json", function(error, graphData) {
+  console.log(graphData)
+  if (error) throw error;
+
+  initGraph(graphData)
+
+  function initGraph(tempData){
+
+    simulation
+        .nodes(tempData.nodes) // 绘制节点
+        .on("tick", simulationUpdate); //设置tick事件
+
+    simulation.force("link") // 绘制边
+        .links(tempData.edges);
+
+    d3.select(canvas)
+        .call(d3.drag()
+            .container(canvas)
+            .subject(dragsubject)
+            .on("start", dragstarted)
+            .on("drag", dragged)
+            .on("end", dragended))
+        .call(d3.zoom()
+          .scaleExtent([1 / 10, 8])
+          .on("zoom", zoomed))
+
+      function zoomed() {
+        console.log("zooming")
+        transform = d3.event.transform;
+        simulationUpdate();
+      }
+
+
+
+    /*function ticked() {
+      context.clearRect(0, 0, width, height);
+
+      context.beginPath();
+      graph.edges.forEach(drawLink);
+      context.strokeStyle = "#aaa";
+      context.stroke();
+
+      context.beginPath();
+      graph.nodes.forEach(drawNode);
+      context.fill();
+      context.strokeStyle = "#fff";
+      context.stroke();
+    }*/
+
+    function dragsubject() {
+      
+      //return simulation.find(d3.event.x, d3.event.y); //找最近的节点
+      var i,
+      x = transform.invertX(d3.event.x),
+      y = transform.invertY(d3.event.y),
+      dx,
+      dy;
+      for (i = tempData.nodes.length - 1; i >= 0; --i) {
+        node = tempData.nodes[i];
+        dx = x - node.x;
+        dy = y - node.y;
+
+        if (dx * dx + dy * dy < radius * radius) {
+          
+          node.x =  transform.applyX(node.x);
+          node.y = transform.applyY(node.y);
+          console.log('您拖动了节点',node)
+          curNode = node; 
+          return node;
+        }
+      }
+
+      console.log('你拖动了画布')
+
+    }
+
+    graph = tempData;
+
+}
+});
+
+
+
+function color(node) {
+
+  //const scale = d3.scaleOrdinal(d3.schemeCategory10); //创建一个序数比例尺 
+  const nodeColor = colors(node.group);
+
+  return nodeColor;
+}
+
+function dragstarted() {
+  if (!d3.event.active) simulation.alphaTarget(0.3).restart();
+  //d3.event.subject.fx = d3.event.subject.x;
+  //d3.event.subject.fy = d3.event.subject.y;
+  d3.event.subject.fx = transform.invertX(d3.event.x);//返回指定的点经过坐标转换之前的 x-坐标.
+  d3.event.subject.fy = transform.invertY(d3.event.y);
+}
+
+function dragged() {
+  //d3.event.subject.fx = d3.event.x;
+  //d3.event.subject.fy = d3.event.y;
+  d3.event.subject.fx = transform.invertX(d3.event.x);
+  d3.event.subject.fy = transform.invertY(d3.event.y);
+}
+
+function dragended() {
+  if (!d3.event.active) simulation.alphaTarget(0);
+  d3.event.subject.fx = null;
+  d3.event.subject.fy = null;
+}
+
+// 画线
+function drawLink(d) {
+  context.moveTo(d.source.x, d.source.y);
+  context.lineTo(d.target.x, d.target.y);
+}
+
+// 画圆
+function drawNode(d) {
+  context.moveTo(d.x + 3, d.y);
+  context.arc(d.x, d.y, 3, 0, 2 * Math.PI);
+}
+
+//添加节点
+function addNode () {
+  var id = graph.nodes.length;
+  graph.nodes.push({"id":id, group: 10});
+  graph.edges.push({"source": "10", "target": id},);
+
+  simulation
+      .nodes(graph.nodes)
+      .force("link")
+      .links(graph.edges); 
+  simulationUpdate();
+}
+
+function simulationUpdate(){
+  console.log('更新')
+  context.save(); // 保存当前环境的状态
+
+  context.clearRect(0, 0, width, height); // 清空给定矩形内的指定像素
+  context.translate(transform.x, transform.y); // 方法重新映射画布上的 (0,0) 位置
+  context.scale(transform.k, transform.k); // 缩放当前绘图，更大或更小
+
+  // canvas api 绘制边
+  graph.edges.forEach(function(d) {
+        context.beginPath(); // 起始一条路径，或重置当前路径
+        context.moveTo(d.source.x, d.source.y); //把路径移动到画布中的指定点，不创建线条
+        context.lineTo(d.target.x, d.target.y); // 添加一个新点，然后在画布中创建从该点到最后指定点的线条
+        context.stroke(); // 绘制已定义的路径
+    });
+
+  // canvas api 绘制点
+  graph.nodes.forEach(function(d, i) {
+      context.beginPath(); // 开始作图
+      context.arc(d.x, d.y, radius, 0, 2 * Math.PI, true); // 方法创建弧/曲线（用于创建圆或部分圆）
+      context.fillStyle = color(d) // 设置或返回用于填充绘画的颜色、渐变或模式。
+      context.fill();  //填充当前绘图（路径）
+  });
+
+  //当前选中的节点curNode高亮显示
+  if(curNode){
+      context.beginPath(); // // 开始作图
+      context.arc(curNode.x, curNode.y, radius, 0, 2 * Math.PI, true); // 方法创建弧/曲线（用于创建圆或部分圆）
+      context.fillStyle = 'black' // 设置或返回用于填充绘画的颜色、渐变或模式。
+      context.fill();  //填充当前绘图（路径） 
+  }
+
+  context.restore(); // 返回之前保存过的路径状态和属性
+//        transform = d3.zoomIdentity;
+} //（）simulationUpdate
+
+</script>

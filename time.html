@@ -1,0 +1,179 @@
+<html>
+<meta charset="utf-8">
+<script src="https://d3js.org/d3-force.v1.min.js"></script>
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<style>
+.edge{
+  stroke: white;
+  stroke-width: 1;
+}
+.graphSVG{
+  background-color: black;
+}
+
+div.container {
+  width: 100%;
+  border: 1px solid gray;
+}
+div.tooltip {
+  position: absolute;
+  text-align: center;
+  width: 180px;
+  padding: 2px;
+  font: 12px sans-serif;
+  background: lightsteelblue;
+  border: 0px;
+  border-radius: 8px;
+  pointer-events: none;
+}
+</style>
+
+<body>
+  <div id="graphDiv"></div>
+
+<script>
+
+var radius = 20;
+
+var defaultNodeCol = "white",
+    highlightCol = "yellow";
+
+var height = window.innerHeight;
+var graphWidth =  window.innerWidth;
+
+var graphCanvas = d3.select('#graphDiv').append('canvas')
+.attr('width', graphWidth + 'px')
+.attr('height', height + 'px')
+.node(); // 这里是什么意思
+
+var context = graphCanvas.getContext('2d');
+
+var div = d3.select("body").append("div")
+    .attr("class", "tooltip")
+    .style("opacity", 0);
+
+//https://github.com/d3/d3-force/blob/v2.1.1/README.md#simulation_force
+var simulation = d3.forceSimulation()
+              .force("center", d3.forceCenter(graphWidth / 2, height / 2))
+              .force("x", d3.forceX(graphWidth / 2).strength(0.1))
+              .force("y", d3.forceY(height / 2).strength(0.1))
+              .force("charge", d3.forceManyBody().strength(-50))
+              .force("link", d3.forceLink().strength(1).id(function(d) { return d.id; }))
+              .alphaTarget(0)
+              .alphaDecay(0.05)
+
+var transform = d3.zoomIdentity;
+
+
+
+d3.json("data.json",function(error,data){
+  console.log(error)
+  console.log(data)
+
+  initGraph(data)
+
+  function initGraph(tempData){
+
+
+    function zoomed() {
+      console.log("zooming")
+      transform = d3.event.transform;
+      //console.log('transform',transform)
+      simulationUpdate();
+    }
+
+    d3.select(graphCanvas)
+        .call(d3.drag().subject(dragsubject).on("start", dragstarted).on("drag", dragged).on("end",dragended)) // 拖拽行为
+        .call(d3.zoom().scaleExtent([1 / 10, 8]).on("zoom", zoomed)) //缩放行为
+
+
+
+  function dragsubject() {
+
+    var i,
+    x = transform.invertX(d3.event.x), //返回指定的点经过坐标转换之前的 x-坐标.
+    y = transform.invertY(d3.event.y),
+    dx,
+    dy;
+    for (i = tempData.nodes.length - 1; i >= 0; --i) {
+      node = tempData.nodes[i];
+      dx = x - node.x;
+      dy = y - node.y;
+
+      if (dx * dx + dy * dy < radius * radius) {
+
+        node.x =  transform.applyX(node.x); //返回指定的 x-坐标经过坐标转换后的新坐标
+        node.y = transform.applyY(node.y);
+
+        return node;
+      }
+    }
+  }
+
+
+  function dragstarted() {
+  	console.log('dragstarted')
+    if (!d3.event.active) simulation.alphaTarget(0.3).restart();
+    d3.event.subject.fx = transform.invertX(d3.event.x);
+    d3.event.subject.fy = transform.invertY(d3.event.y);
+  }
+
+  function dragged() {
+  	console.log("dragged")
+    d3.event.subject.fx = transform.invertX(d3.event.x);
+    d3.event.subject.fy = transform.invertY(d3.event.y);
+
+  }
+
+  function dragended() {
+    if (!d3.event.active) simulation.alphaTarget(0);
+    d3.event.subject.fx = null;
+    d3.event.subject.fy = null;
+  }
+
+    simulation.nodes(tempData.nodes)
+              .on("tick",simulationUpdate);
+
+    simulation.force("link")
+              .links(tempData.edges);
+
+
+
+    function render(){
+
+    }
+
+    function simulationUpdate(){
+      // 这里面都是canvas的api	
+      context.save(); // 保存当前环境的状态
+
+      context.clearRect(0, 0, graphWidth, height); // 清空给定矩形内的指定像素
+      context.translate(transform.x, transform.y); // 方法重新映射画布上的 (0,0) 位置
+      context.scale(transform.k, transform.k); // 缩放当前绘图，更大或更小
+
+
+      tempData.edges.forEach(function(d) {
+            context.beginPath(); //	起始一条路径，或重置当前路径
+            context.moveTo(d.source.x, d.source.y); //把路径移动到画布中的指定点，不创建线条
+            context.lineTo(d.target.x, d.target.y); // 添加一个新点，然后在画布中创建从该点到最后指定点的线条
+            context.stroke(); // 绘制已定义的路径
+        });
+
+        // Draw the nodes
+        tempData.nodes.forEach(function(d, i) {
+
+            context.beginPath();
+            context.arc(d.x, d.y, radius, 0, 2 * Math.PI, true); // 方法创建弧/曲线（用于创建圆或部分圆）
+            context.fillStyle = "red"// 设置或返回用于填充绘画的颜色、渐变或模式。
+            context.fill();  //填充当前绘图（路径）
+        });
+
+        context.restore(); // 返回之前保存过的路径状态和属性
+//        transform = d3.zoomIdentity;
+    } //（）simulationUpdate
+  }
+})
+
+
+</script>
+</body>
