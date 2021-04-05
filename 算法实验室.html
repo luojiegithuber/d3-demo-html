@@ -1,0 +1,169 @@
+<html>
+<meta charset="utf-8">
+<title>算法实验室</title>
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<style>
+
+</style>
+
+<body>
+
+
+<script>
+
+var json = {
+    "nodes": [{
+            "name": "北京"
+        }, {
+            "name": "昆明"
+        },
+        {
+            "name": "成都"
+        }, {
+            "name": "西安"
+        },
+        {
+            "name": "上海"
+        }, {
+            "name": "杭州"
+        },
+        {
+            "name": "广州"
+        }, {
+            "name": "桂林"
+        },
+        {
+            "name": "太原"
+        }, {
+            "name": "美国"
+        }
+    ],
+
+    "edges": [
+        {
+            "source": "美国",
+            "target": "上海"
+        },
+        {
+            "source": "北京",
+            "target": "上海"
+        },
+        {
+            "source": "北京",
+            "target": "广州"
+        },
+        {
+            "source": "北京",
+            "target": "杭州"
+        },
+        {
+            "source": "美国",
+            "target": "杭州"
+        },
+        {
+            "source": "北京",
+            "target": "西安"
+        },
+        {
+            "source": "北京",
+            "target": "成都"
+        },
+        {
+            "source": "美国",
+            "target": "北京"
+        },
+        {
+            "source": "北京",
+            "target": "太原"
+        },
+        {
+            "source": "北京",
+            "target": "桂林"
+        },
+        {
+            "source": "北京",
+            "target": "昆明"
+        },
+        {
+            "source": "上海",
+            "target": "杭州"
+        },
+        {
+            "source": "昆明",
+            "target": "成都"
+        },
+        {
+            "source": "西安",
+            "target": "太原"
+        }
+    ],
+}
+
+console.log(hierarchyData2(json))
+
+function hierarchyData(data){
+
+  const nodes = data.nodes;
+  const edges = data.edges;
+  function Node(name){
+    this.name = name;
+    this.children = null
+  }
+
+  const root = new Node('root');
+  root.children = []; 
+  const nodeMap = new Map(nodes.map(d =>{ 
+    const node = new Node(d.name)
+    root.children.push(node)
+    return [d.name,node ]
+  }))
+
+  edges.forEach(edge => {
+    const sourceNode = nodeMap.get(edge.source);
+    const targetNode = nodeMap.get(edge.target);
+    if(!sourceNode.children){
+      sourceNode.children = [];
+    }
+
+    sourceNode.children.push(targetNode);
+
+  })
+
+  return root 
+
+}
+
+function hierarchyData2(data){
+
+  const nodes = data.nodes;
+  const edges = data.edges;
+  function Node(name){
+    this.name = name;
+    this.children = null;
+    this.incoming = [];
+    this.outgoing = [];
+  }
+
+  const root = new Node('root');
+  root.children = []; 
+  const nodeMap = new Map(nodes.map(d =>{ 
+    const node = new Node(d.name)
+    root.children.push(node)
+    return [d.name,node ]
+  }))
+
+  edges.forEach(edge => {
+    const sourceNode = nodeMap.get(edge.source);
+    const targetNode = nodeMap.get(edge.target);
+
+    sourceNode.outgoing.push(targetNode);
+    targetNode.incoming.push(sourceNode)
+  })
+
+  return root 
+
+}
+
+
+</script>
+</body>

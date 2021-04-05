@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Graph</title>
+    <script src="https://d3js.org/d3.v4.js"></script>
+    <script src="https://giottojs.org/d3-canvas-transition/0.3.5/d3-canvas-transition.js"></script>
+    <style>
+      #panel {
+          background-color: rgba(245,245,245,0.8);
+          padding: 5px;
+          position: absolute;
+          display: block;
+      }
+    </style>
+</head>
+<body>
+  <div id="example" style="max-width: 960px"></div>
+  <script >
+
+    var radius = 10,
+        strength = 100,
+        example = d3.select("#example"),
+        width = d3.getSize(example.style('width')),
+        height = Math.min(500, width);
+
+     var transform = d3.zoomIdentity;
+     const colors = d3.scaleOrdinal(d3.schemeCategory10);
+//miserables
+    d3.json('./huawei.json', function (e, data) {
+        draw(data);
+    });
+
+    function colorNode(node) {
+
+      const num = parseInt(node.class.substr(1));
+      return colors(num);
+      //return colors(3);
+    }
+
+    function draw (data) {
+        console.log(data)
+
+        var links = d3
+            .forceLink()
+            .id(function (d) {
+                return d.id;
+            });
+
+        simulation = d3.forceSimulation()
+            .force("charge", d3.forceManyBody().strength(-strength))
+            .force("link", links)
+            .force("x", d3.forceX())
+            .force("y", d3.forceY())
+            .on("tick", ticked); //设置tick事件
+
+
+            simulation
+                .nodes(data.nodes) // 绘制节点
+                
+
+            simulation.force("link") // 绘制边
+                .links(data.edges);
+
+
+
+
+        var paper = example
+            .append('canvas')
+            .attr('width', width)
+            .attr('height', height)
+            .canvas(true);
+
+        paper
+            .append('rect')
+            .attr('x', 0)
+            .attr('y', 0)
+            .attr('width', width)
+            .attr('height', height)
+            .style("stroke-width", 0)
+            .style('fill', '#000')
+            .style('fill-opacity', 1);
+
+        paper = paper.append('g')
+            .attr('transform', 'translate(' + width/2 +', ' + height/2 +')');
+            
+
+        paper
+            .selectAll('.links')
+            .data(links.links())
+            .enter()
+            .append('line')
+            .classed('edges', true)
+            .style('stroke-width',function (link) {
+                return '1';
+            })
+            .style('stroke', function (link) {
+                return '#708090';
+            });
+
+
+            
+
+        paper
+            .selectAll('.nodes')
+            .data(simulation.nodes())
+            .enter()
+            .append('circle')
+            .classed('nodes', true)
+            .style('fill', colorNode)
+            .style('stroke', '#fff')
+            .style('stroke-width', '0px')
+            .attr('r', radius)
+            .on("mouseenter.hover", mouseenter)
+            .on("mouseleave.hover", end)
+            .call(d3.drag()
+              .on("start", dragstarted)
+              .on("drag", dragged)
+              .on("end", dragended))
+
+
+
+
+
+        paper
+            .selectAll('.text')
+            .data(simulation.nodes())
+            .enter()
+            .append('text')
+            .classed('text', true)
+            .style('fill', '#ffffe5')
+            .style('font-size', '10px')
+            .style('text-anchor', 'middle')
+            .text(function (d) {
+                return d.label;
+            });
+
+       /*example
+        .call(d3.zoom()
+        .scaleExtent([1 / 10, 8])
+        .on("zoom", zoomed))
+
+        function zoomed() {
+          console.log('zooming')
+          transform =  d3.event.transform
+          paper.attr("transform", transform);
+
+        }*/
+
+
+
+
+  function dragstarted(d) {
+ if (!d3.event.active) simulation.alphaTarget(0.3).restart();
+    d.fx = d.x;
+    d.fy = d.y;
+  }
+  
+  function dragged(d) {
+  d.fx = d3.event.x;
+  d.fy = d3.event.y;
+  }
+  
+  function dragended(d) {
+  if (!d3.event.active) simulation.alphaTarget(0);
+  d.fx = null;
+  d.fy = null;
+  }
+
+        function mouseenter () {
+            /*d3.select(this).style('stroke-width', '2px').style('cursor', 'pointer');*/
+                        d3.select(this).style('stroke-width', '1px').style("fill", '#fff').style('cursor', 'pointer');
+
+        }
+
+        function end() {
+            var el = d3.select(this),
+                d = el.datum(); //取得或设置单个元素的数据，不必计算连接
+                //console.log(d)
+            el.style("stroke-width", '0px').style("fill", colorNode).style('cursor', 'pointer');
+        }
+
+
+        function ticked() {
+          console.log('更新')
+
+            paper.selectAll('.nodes')
+                .attr('cx', function (d) {
+                    return d.x;
+                })
+                .attr('cy', function (d) {
+                    return d.y;
+                });
+
+            paper.selectAll('.text')
+                .attr("transform", function (d) {
+                    return "translate(" + d.x + "," + d.y + ")";
+                });
+
+            paper.selectAll('.edges')
+                .attr('x1', function (d) {
+                    return d.source.x;
+                })
+                .attr('y1', function (d) {
+                    return d.source.y;
+                })
+                .attr('x2', function (d) {
+                    return d.target.x;
+                })
+                .attr('y2', function (d) {
+                    return d.target.y;
+                });
+        }
+    }
+  </script>
+</body>

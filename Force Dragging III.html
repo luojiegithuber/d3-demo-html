@@ -26,7 +26,7 @@ var simulation = d3.forceSimulation() // 创建一个新的力学仿真.
 
 var transform = d3.zoomIdentity;
 
-d3.json("miserables.json", function(error, graphData) {
+d3.json("huawei.json", function(error, graphData) {
   console.log(graphData)
   if (error) throw error;
 
@@ -112,7 +112,8 @@ d3.json("miserables.json", function(error, graphData) {
 function color(node) {
 
   //const scale = d3.scaleOrdinal(d3.schemeCategory10); //创建一个序数比例尺 
-  const nodeColor = colors(node.group);
+  //const nodeColor = colors(node.group);
+  const nodeColor = colors(1);
 
   return nodeColor;
 }
@@ -188,12 +189,12 @@ function simulationUpdate(){
   });
 
   //当前选中的节点curNode高亮显示
-  if(curNode){
+  /*if(curNode){
       context.beginPath(); // // 开始作图
       context.arc(curNode.x, curNode.y, radius, 0, 2 * Math.PI, true); // 方法创建弧/曲线（用于创建圆或部分圆）
       context.fillStyle = 'black' // 设置或返回用于填充绘画的颜色、渐变或模式。
       context.fill();  //填充当前绘图（路径） 
-  }
+  }*/
 
   context.restore(); // 返回之前保存过的路径状态和属性
 //        transform = d3.zoomIdentity;
