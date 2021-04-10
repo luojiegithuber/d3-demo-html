@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>华为同心圆布局</title>
+    <svg width="1000" height="500"></svg>
+    <style>
+
+ 
+    </style>
+ 
+</head>
+<body>
+    <script src="https://d3js.org/d3.v6.js"></script>
+
+<script>
+
+colorin = "#00f"
+colorout = "#f00"
+colornone = "#ccc"
+width = 1000
+radius = width / 2
+allNodes = null;
+allNodeMap = null;
+line = d3.lineRadial()
+    .curve(d3.curveBundle.beta(0)) //d3.lineRadial.curve()方法用于为lineRadial绘制曲线。
+    .radius(d => d.y)  //它设置或获取半径访问器。如果提供了半径，则它必须是数字或返回代表半径的数字的函数。
+    .angle(d => d.x) // 设置或返回角度访问器。如果提供了角度，则它必须是数字或返回表示弧度角的数字的函数。
+tree = d3.cluster()
+.size([2 * Math.PI, radius - 100])
+
+var data  = null;
+//railway
+//flare
+d3.json("huawei.json").then(function(data) {
+    const edges = data.edges; 
+    console.log(data)
+    data = hierarchyData(data)
+    console.log(data)
+
+
+  /*const root = tree(bilink2(d3.hierarchy(data)
+      .sort((a, b) => d3.ascending(a.data.id, b.data.id))));*/
+      treeData = bilink(d3.hierarchy(data)
+      .sort((a, b) => d3.ascending(b.data.pathNum, a.data.pathNum)));
+
+      //allNodes = hierarchyNode(treeData.children)
+      //return
+
+  const root = tree(treeData);
+  //ascending计算两个值的自然顺序
+
+  console.log('rootTree',root)
+
+  const svg = d3.select("svg")
+      .attr("viewBox", [-width / 2, -width / 2, width, width]);
+
+
+  
+
+
+  const node = svg.append("g")
+      .attr("font-family", "sans-serif")
+      .attr("font-size", 30)
+    .selectAll("g")
+    .data(allNodes)
+
+   var g = node.enter().append("g")
+          .attr("transform", d => `rotate(${d.x * 180 / Math.PI - 90}) translate(${d.y},0) rotate(${ - d.x * 180 / Math.PI + 90})`)
+    g
+
+      /*.attr("transform", d => ` translate(${d.y},0) `)*/
+            .append('circle')
+            .style('fill', 'yellow')
+            .style('stroke', '#000')
+            .attr('r', 20)
+
+
+
+
+      g
+        .append('text')
+        .attr("transform", d => `translate(0,10)`)
+        .style('fill', '#000')
+        .style('font-size', '30px')
+        .style('text-anchor', 'middle')
+        .text(function (d) {
+          return (d.pathNum)
+        })
+        .each(function(d) { d.text = this; })
+              .on("mouseover", overed)
+      .on("mouseout", outed)
+
+//console.log('flatmap',root.leaves().flatMap(leaf => leaf.outgoing))
+
+  const link = svg.append("g")
+      .attr("stroke", colornone)
+      .attr("fill", "none")
+    .selectAll("path")
+    .data(allNodes.flatMap(leaf => leaf.outgoing))
+    .join("path")
+      .style("mix-blend-mode", "multiply")
+      .attr("d", ([i, o]) => line(i.path(o)))
+      .each(function(d) { d.path = this; });
+
+      //console.log('【link】',link)
+
+
+
+  function overed(event, d) {
+    console.log(d)
+    link.style("mix-blend-mode", null);
+    d3.select(this).attr("font-weight", "bold");
+    d3.selectAll(d.incoming.map(d => d.path)).attr("stroke", colorin).raise();
+    d3.selectAll(d.incoming.map(([d]) => d.text)).attr("fill", colorin).attr("font-weight", "bold");
+    d3.selectAll(d.outgoing.map(d => d.path)).attr("stroke", colorout).raise();
+    d3.selectAll(d.outgoing.map(([, d]) => d.text)).attr("fill", colorout).attr("font-weight", "bold");
+  }
+
+  function outed(event, d) {
+    link.style("mix-blend-mode", "multiply");
+    d3.select(this).attr("font-weight", null);
+    d3.selectAll(d.incoming.map(d => d.path)).attr("stroke", null);
+    d3.selectAll(d.incoming.map(([d]) => d.text)).attr("fill", null).attr("font-weight", null);
+    d3.selectAll(d.outgoing.map(d => d.path)).attr("stroke", null);
+    d3.selectAll(d.outgoing.map(([, d]) => d.text)).attr("fill", null).attr("font-weight", null);
+  }
+
+
+
+//数据分层，使其变成d3.hierarchy能处理的格式
+/*function hierarchyData(data){
+
+  const nodes = data.nodes;
+  const edges = data.edges;
+  function Node(obj){
+    this.id = obj.id;
+    this.children = null;
+    this.pathNum = 0;
+    this.data = obj;
+  }
+
+  const root = new Node({id:'root'});
+  root.children = []; 
+  const nodeMap = new Map(nodes.map(d =>{ 
+    const node = new Node(d)
+    root.children.push(node)
+    return [d.id,node ]
+  }))
+
+  edges.forEach(edge => {
+    const sourceNode = nodeMap.get(edge.source);
+    const targetNode = nodeMap.get(edge.target);
+
+    sourceNode.pathNum ++;
+    targetNode.pathNum ++;
+  })
+
+
+  root.edges = edges;
+  console.log(hierarchyNode(root))
+
+
+  return root 
+
+}*/
+
+function hierarchyData(data){
+
+  const nodes = data.nodes;
+  const edges = data.edges;
+  function Node(obj){
+    this.id = obj.id;
+    this.children = null;
+    this.pathNum = 0;
+    this.data = obj;
+  }
+
+  const root = new Node({id:'root'});
+  root.children = []; 
+  const nodeMap = new Map(nodes.map(d =>{ 
+    const node = new Node(d)
+    root.children.push(node)
+    return [d.id,node ]
+  }))
+
+  edges.forEach(edge => {
+    const sourceNode = nodeMap.get(edge.source);
+    const targetNode = nodeMap.get(edge.target);
+
+    sourceNode.pathNum ++;
+    targetNode.pathNum ++;
+  })
+
+  root.children.sort((a, b) => d3.ascending(b.pathNum, a.pathNum))
+
+
+  root.edges = edges;
+  root.children = hierarchyNode(root.children);
+
+
+  return root 
+
+}
+
+function hierarchyNode(nodes){
+  console.log('【allNode】',nodes);
+  const allArr = [];
+  let curPathNum = -1;
+  let samePathNumArr=[];
+  let headNode;
+
+  nodes.forEach(d =>{
+    if(curPathNum !== d.pathNum){
+      allArr.push(samePathNumArr);
+      samePathNumArr = [];
+      samePathNumArr.push(d)
+      curPathNum = d.pathNum;
+    }else{
+      samePathNumArr.push(d)
+    }
+  })
+  
+  allArr.push(samePathNumArr)
+  allArr.shift()
+
+  //
+
+  for(let i = 1;i<allArr.length;i++){
+    const preLastNode = allArr[i-1][0];
+    preLastNode.children = allArr[i];
+  }
+
+  headNode = allArr.shift();
+
+  console.log('【allNode结束】',headNode)
+  return headNode
+  
+}
+
+
+
+//这一步根据import生成incoming
+function bilink(root) {
+
+  const nodes = [];
+  root.each(d => {
+    nodes.push(d)
+  });
+  nodes.shift();
+
+
+  nodes.forEach(curNode => {
+    curNode.incoming = []
+    curNode.outgoing = []
+  })
+  const edges = root.data.edges;
+  console.log('【根】',root,nodes,edges)
+  allNodeMap = new Map(nodes.map(d => [d.data.id, d]));
+  edges.forEach(edge => {
+    const sourceNode = allNodeMap.get(edge.source);
+    const targetNode = allNodeMap.get(edge.target);
+
+    const path = [sourceNode,targetNode]
+
+    sourceNode.outgoing.push(path);
+    targetNode.incoming.push(path)
+  })
+
+  nodes.forEach(curNode => {
+    curNode.pathNum = curNode.incoming.length + curNode.outgoing.length;
+  })
+
+  allNodes = nodes;
+
+  return root;
+}
+
+
+
+})
+
+
+
+
+</script>
+ 
+</body>
+</html>
