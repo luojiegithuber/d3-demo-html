@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <title>Graph</title>
     <script src="https://d3js.org/d3.v4.js"></script>
-    <script src="https://giottojs.org/d3-canvas-transition/0.3.5/d3-canvas-transition.js"></script>
+    <script src="https://giottojs.org/d3-canvas-transition/0.3.7/d3-canvas-transition.js"></script>
     <style>
       #panel {
           background-color: rgba(245,245,245,0.8);
@@ -21,8 +21,10 @@
     var radius = 10,
         strength = 100,
         example = d3.select("#example"),
-        width = d3.getSize(example.style('width')),
+        width = d3.getSize(960),
         height = Math.min(500, width);
+
+        console.log(example)
 
      var transform = d3.zoomIdentity;
      const colors = d3.scaleOrdinal(d3.schemeCategory10);
@@ -65,11 +67,16 @@
 
 
 
-        var paper = example
+        /*var paper = example
             .append('canvas')
             .attr('width', width)
             .attr('height', height)
-            .canvas(true);
+            .canvas(true);*/
+            var paper = example
+            .append('svg')
+            .attr('width', width)
+            .attr('height', height)
+
 
         paper
             .append('rect')

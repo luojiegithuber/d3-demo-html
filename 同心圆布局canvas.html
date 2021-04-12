@@ -1,20 +1,30 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
-<svg width="960" height="500" viewBox="-480 -250 960 500">
+<div id="example" style="max-width: 960px"></div>
+<svg width="960" height="500" >
 
 </svg>
-<script src="https://d3js.org/d3.v6.min.js"></script>
+<script src="https://d3js.org/d3.v6.js"></script>
+<script src="https://d3js.org/d3-collection.v1.min.js"></script>
 
+<script src="https://d3js.org/d3-selection.v1.min.js"></script>
+<script src="https://d3js.org/d3-timer.v1.min.js"></script>t>
+<script src="https://giottojs.org/d3-canvas-transition/0.3.7/d3-canvas-transition.js"></script>
 <script>
 
 
 colorin = "#00f"
 colorout = "#f00"
 colornone = "#ccc"
-width = 1000
+width = 960
+height = 500
 radius = width / 2
 allNodes = [];
 allNodeMap = null;
+
+console.log
+example = d3.select("#example");
+console.log(d3)
 
 line = d3.lineRadial()
     .curve(d3.curveBundle.beta(0)) 
@@ -30,8 +40,13 @@ d3.json("huawei.json").then(function(data) {
   function colorNode(d){
         return colors(d.degree);
   }
-
   const svg = d3.select("svg")
+
+  /*const svg = example
+    .append('canvas')
+    .attr('width', width)
+    .attr('height', height)
+    .canvas(true)*/
 
   svg
       .append('rect')
@@ -41,7 +56,11 @@ d3.json("huawei.json").then(function(data) {
       .attr('height', height)
       .style("stroke-width", 0)
       .style('fill', '#000')
-      .style('fill-opacity', 1);
+      .style('fill-opacity', 0);
+
+
+            
+
 
   const rings = hierarchyNodeByDegree(allNodes).map((d,index) => {
     return {degree:index}
@@ -50,6 +69,7 @@ d3.json("huawei.json").then(function(data) {
 
   const ring = svg
     .append("g")
+
     .selectAll("circle")
     .data(rings)
     .enter().append("circle")
@@ -59,43 +79,6 @@ d3.json("huawei.json").then(function(data) {
       .attr('r',function(d){
         return d.degree*50
       })
-
-
-
-
-
-/*
-      g
-        .append('text')
-        .attr("transform", d => `translate(0,10)`)
-        .style('fill', '#000')
-        .style('font-size', '30px')
-        .style('text-anchor', 'middle')
-        .text(function (d) {
-          return (d.pathNum)
-        })
-        .each(function(d) { d.text = this; })
-              .on("mouseover", overed)
-      .on("mouseout", outed)
-*/
-//console.log('flatmap',root.leaves().flatMap(leaf => leaf.outgoing))
-/*
-  const link = svg.append("g")
-      .attr("stroke", colornone)
-      .attr("fill", "none")
-    .selectAll("path")
-    .data(allNodes.flatMap(leaf => leaf.outgoing))
-    .join("path")
-      .style("mix-blend-mode", "multiply")
-      .attr("d", ([i, o]) => line(i.path(o)))
-      .each(function(d) { d.path = this; });
-*/
-      //console.log('【link】',link)
-
-
-
-
-
 
 
 function packingNode(data){
@@ -240,8 +223,6 @@ var edge = svg
   .selectAll("path")
   .data(simulation.nodes().flatMap(leaf => leaf.outgoing))
   .enter().append("path")
-
-
 
 
   function overed(event, d) {
