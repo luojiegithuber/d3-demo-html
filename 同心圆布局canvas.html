@@ -5,10 +5,8 @@
 
 </svg>
 <script src="https://d3js.org/d3.v6.js"></script>
-<script src="https://d3js.org/d3-collection.v1.min.js"></script>
-
-<script src="https://d3js.org/d3-selection.v1.min.js"></script>
-<script src="https://d3js.org/d3-timer.v1.min.js"></script>t>
+<script src="https://d3js.org/d3-collection.v1.js"></script>
+<script src="https://d3js.org/d3-selection.v1.js"></script>
 <script src="https://giottojs.org/d3-canvas-transition/0.3.7/d3-canvas-transition.js"></script>
 <script>
 
@@ -22,9 +20,10 @@ radius = width / 2
 allNodes = [];
 allNodeMap = null;
 
-console.log
+
 example = d3.select("#example");
 console.log(d3)
+console.log(example)
 
 line = d3.lineRadial()
     .curve(d3.curveBundle.beta(0)) 
@@ -40,13 +39,13 @@ d3.json("huawei.json").then(function(data) {
   function colorNode(d){
         return colors(d.degree);
   }
-  const svg = d3.select("svg")
+  //var svg = d3.select("svg")
 
-  /*const svg = example
-    .append('canvas')
-    .attr('width', width)
-    .attr('height', height)
-    .canvas(true)*/
+  var svg = example
+      .append('canvas')
+      .attr('width', width)
+      .attr('height', height)
+      .canvas(true);
 
   svg
       .append('rect')
@@ -55,12 +54,12 @@ d3.json("huawei.json").then(function(data) {
       .attr('width', width)
       .attr('height', height)
       .style("stroke-width", 0)
-      .style('fill', '#000')
-      .style('fill-opacity', 0);
+      .style('fill', '#ccc')
+      .style('fill-opacity', 0.1);
 
-
+  svg = svg.append('g')
+      .attr('transform', 'translate(' + width/2 +', ' + height/2 +')');
             
-
 
   const rings = hierarchyNodeByDegree(allNodes).map((d,index) => {
     return {degree:index}
@@ -69,7 +68,6 @@ d3.json("huawei.json").then(function(data) {
 
   const ring = svg
     .append("g")
-
     .selectAll("circle")
     .data(rings)
     .enter().append("circle")
@@ -177,8 +175,12 @@ var node_g = svg
     .append("circle")
     .attr("r", 10)
     .attr("fill", function(d) { return colorNode(d); })
-    .on("mouseover", overed)
-    .on("mouseout", outed)
+    .on("mouseenter.hover", overed2)
+    .on("mouseleave.hover", outed2)
+    .append("title")
+  .text(function(d) { return d.id; })
+
+
     
   node_g
     .append("text")
@@ -194,7 +196,7 @@ var node_g = svg
 
 var node = node_g.selectAll("circle")
 var text = node_g.selectAll("text")
-console.log(node)
+
 
 
 
@@ -225,29 +227,46 @@ var edge = svg
   .enter().append("path")
 
 
-  function overed(event, d) {
-    console.log(d)
-    edge.style("mix-blend-mode", null);
-    d3.select(this).attr("font-weight", "bold");
-    d3.selectAll(d.incoming.map(d => d.path)).attr("stroke", colorin).raise();
-    d3.selectAll(d.incoming.map(([d]) => d.text)).attr("fill", colorin).attr("font-weight", "bold");
-    d3.selectAll(d.outgoing.map(d => d.path)).attr("stroke", colorout).raise();
-    d3.selectAll(d.outgoing.map(([, d]) => d.text)).attr("fill", colorout).attr("font-weight", "bold");
+  function overed1 () {
+    d3.select(this).style('stroke-width', '1px').style("fill", '#fff').style('cursor', 'pointer');
   }
 
-  function outed(event, d) {
-    edge.style("mix-blend-mode", "multiply");
-    d3.select(this).attr("font-weight", null);
-    d3.selectAll(d.incoming.map(d => d.path)).attr("stroke", null);
-    d3.selectAll(d.incoming.map(([d]) => d.text)).attr("fill", null).attr("font-weight", null);
-    d3.selectAll(d.outgoing.map(d => d.path)).attr("stroke", null);
-    d3.selectAll(d.outgoing.map(([, d]) => d.text)).attr("fill", null).attr("font-weight", null);
+  function outed1() {
+      var el = d3.select(this),
+          d = el.datum(); //取得或设置单个元素的数据，不必计算连接
+          //console.log(d)
+      el.style("stroke-width", '0px').style("fill", colorNode).style('cursor', 'default');
+  }
+
+
+  function overed2(d) {
+
+    d3.select(this).style('stroke-width', '1px').style("fill", '#fff').style('cursor', 'pointer');
+    //edge.style("mix-blend-mode", null);
+    //console.log('进去',d3.select(d.text))
+    d3.select(d.text).attr("font-weight", "bold");
+    d3.selectAll(d.incoming.map(d =>d.path )).attr("stroke", colorin).raise();
+    //d3.selectAll(d.incoming.map(([d]) => d3.select(d.text))).attr("fill", colorin).attr("font-weight", "bold");
+    //d3.selectAll(d.outgoing.map(d => d3.select(d.path))).attr("stroke", colorout).raise();
+    //d3.selectAll(d.outgoing.map(([, d]) => d3.select(d.text))).attr("fill", colorout).attr("font-weight", "bold");
+  }
+
+  function outed2(d) {
+
+    d3.select(this).style("stroke-width", '0px').style("fill", colorNode).style('cursor', 'default');
+    //edge.style("mix-blend-mode", "multiply");
+    //console.log('出来',d3.select(d.text))
+    d3.select(d.text).attr("font-weight", "normal");
+    d3.selectAll(d.incoming.map(d => d.path)).attr("stroke", colornone);
+    /*d3.selectAll(d.incoming.map(([d]) => d3.select(d.text))).attr("fill", null).attr("font-weight", null);
+    d3.selectAll(d.outgoing.map(d => d3.select(d.path))).attr("stroke", null);
+    d3.selectAll(d.outgoing.map(([, d]) => d3.select(d.text))).attr("fill", null).attr("font-weight", null);*/
   }
         
 
 
 
-
+var count=0;
 function ticked() {
   console.log(1)
 
@@ -269,7 +288,6 @@ function ticked() {
         path.lineTo(o.x, o.y);
         path.closePath();
         return path
-
       })
       .each(function(d) { d.path = this; });
 

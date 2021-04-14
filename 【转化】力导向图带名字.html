@@ -67,15 +67,11 @@
 
 
 
-        /*var paper = example
+        var paper = example
             .append('canvas')
             .attr('width', width)
             .attr('height', height)
-            .canvas(true);*/
-            var paper = example
-            .append('svg')
-            .attr('width', width)
-            .attr('height', height)
+            .canvas(true);
 
 
         paper
@@ -139,7 +135,7 @@
             .style('font-size', '10px')
             .style('text-anchor', 'middle')
             .text(function (d) {
-                return d.label;
+                return d.id;
             });
 
        /*example
@@ -176,15 +172,16 @@
 
         function mouseenter () {
             /*d3.select(this).style('stroke-width', '2px').style('cursor', 'pointer');*/
-                        d3.select(this).style('stroke-width', '1px').style("fill", '#fff').style('cursor', 'pointer');
+            d3.select(this).style('stroke-width', '1px').style("fill", '#fff').style('cursor', 'pointer');
+
 
         }
 
         function end() {
             var el = d3.select(this),
                 d = el.datum(); //取得或设置单个元素的数据，不必计算连接
-                //console.log(d)
-            el.style("stroke-width", '0px').style("fill", colorNode).style('cursor', 'pointer');
+                console.log(d)
+            el.style("stroke-width", '0px').style("fill", colorNode).style('cursor', 'default');
         }
 
 
