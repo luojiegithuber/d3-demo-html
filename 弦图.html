@@ -31,7 +31,7 @@ d3.json("huawei.json").then(function(data) {
       matrix[targetNode.matrixIndex][sourceNode.matrixIndex]++;
     })
 
-    console.log(d3.scaleOrdinal(d3.schemeBlues[9])(1))
+    
 
 
 
@@ -111,15 +111,17 @@ ${formatValue(d.value)}`);
       .attr("x2", 6);
 
   groupTick.append("text")
+      .attr("stroke", "grey")
       .attr("x", 8)
-      .attr("dy", "0.35em")
+      .attr("dy", "0.30em")
       .attr("transform", d => d.angle > Math.PI ? "rotate(180) translate(-16)" : null)
       .attr("text-anchor", d => d.angle > Math.PI ? "end" : null)
       //.text(d => d.value);
       .text(d => formatValue(d.value));
 
   group.select("text")
-      .attr("font-weight", "bold")
+      //.attr("font-weight", "bold")
+      .attr("stroke", "black")
       .text(function(d) {
         return this.getAttribute("text-anchor") === "end"
             ? `↑ ${names[d.index]}`

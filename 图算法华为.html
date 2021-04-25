@@ -20,6 +20,7 @@ colorout = "#f00"
 colornone = "#ccc"
 width = 954
 radius = width / 2
+
 line = d3.lineRadial()
     .curve(d3.curveBundle.beta(0.85)) //d3.lineRadial.curve()方法用于为lineRadial绘制曲线。
     .radius(d => d.y)  //它设置或获取半径访问器。如果提供了半径，则它必须是数字或返回代表半径的数字的函数。
@@ -32,7 +33,9 @@ var data  = null;
 //flare
 d3.json("huawei.json").then(function(data) {
     const edges = data.edges; 
-    console.log(data)
+const color = d3.scaleOrdinal(data.nodes.map(d => d.group).sort(d3.ascending), d3.schemeCategory10)
+console.log(color('AAAAAA'))
+console.log(color('BBBBBB'))
     data = hierarchyData(data)
     console.log(data)
 
@@ -47,7 +50,15 @@ d3.json("huawei.json").then(function(data) {
   console.log('rootTree',root)
 
   const svg = d3.select("svg")
-      .attr("viewBox", [-width / 2, -width / 2, width, width]);
+      .attr("viewBox", [-width / 2, -width / 2, width, width])
+      .call(d3.zoom()
+        .scaleExtent([1 / 2, 4])
+        .on("zoom", zoomed))
+      .append('g')
+      //.attr("transform",`rotate(-90) translate(-${height-100},0)`)
+      function zoomed(e) {
+          svg.attr("transform", e.transform);
+        }
 
 
   const node = svg.append("g")
@@ -61,10 +72,11 @@ d3.json("huawei.json").then(function(data) {
     g
       .attr("transform", d => `rotate(${d.x * 180 / Math.PI - 90}) translate(${d.y + 20},0) rotate(${ - d.x * 180 / Math.PI + 90})`)
             .append('circle')
-            .style('fill', 'yellow')
+            .style('fill', d => color(d.data.data.group))
             .style('stroke', '#000')
             .attr('r', 20)
-
+        .on("mouseover", overed)
+        .on("mouseout", outed)
 
 
 
@@ -78,8 +90,8 @@ d3.json("huawei.json").then(function(data) {
           return (d.data.id)
         })
         .each(function(d) { d.text = this; })
-              .on("mouseover", overed)
-      .on("mouseout", outed)
+        .on("mouseover", overed)
+        .on("mouseout", outed)
 
 console.log('flatmap',root.leaves().flatMap(leaf => leaf.outgoing))
 
@@ -123,16 +135,17 @@ function hierarchyData(data){
 
   const nodes = data.nodes;
   const edges = data.edges;
-  function Node(id){
-    this.id = id;
+  function Node(d){
+    this.id = d.id;
     this.children = null;
     this.pathNum = 0;
+    this.data = d
   }
 
-  const root = new Node('root');
+  const root = new Node({id:'root'});
   root.children = []; 
   const nodeMap = new Map(nodes.map(d =>{ 
-    const node = new Node(d.id)
+    const node = new Node(d)
     root.children.push(node)
     return [d.id,node ]
   }))
@@ -185,9 +198,6 @@ function bilink2(root) {
   return root;
 }
 
-function id(node) {
-  return `${node.parent ? id(node.parent) + "." : ""}${node.data.name}`;
-}
 
 })
 

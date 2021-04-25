@@ -1,62 +1,63 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
-<svg width="800" height="800" >
+<button id="one">1</button>
+<button>2</button>
+<button>3</button>
+<svg width="800" height="500" >
 
 </svg>
 <script src="https://d3js.org/d3.v6.js"></script>
 
 <script>
-/*viewofOrder = createViewofOrder()
-function createViewofOrder(){
-  const options = [
-    {name: "Order by name", value: (a, b) => d3.ascending(a.id, b.id)},
-    {name: "Order by group", value: (a, b) => a.group - b.group || d3.ascending(a.id, b.id)},
-    {name: "Order by degree", value: (a, b) => d3.sum(b.sourceLinks, l => l.value) + d3.sum(b.targetLinks, l => l.value) - d3.sum(a.sourceLinks, l => l.value) - d3.sum(a.targetLinks, l => l.value) || d3.ascending(a.id, b.id)}
-  ];
-  const form = html `<form style="display: flex; align-items: center; min-height: 33px;"><select name=i>${options.map(o => Object.assign(html `<option>`, {textContent: o.name}))}`;
-  const timeout = setTimeout(() => {
-    form.i.selectedIndex = 1;
-    form.dispatchEvent(new CustomEvent("input"));
-  }, 2000);
-  form.onchange = () => {
-    form.dispatchEvent(new CustomEvent("input")); // Safari
-  };
-  form.oninput = (event) => {
-    if (event.isTrusted) form.onchange = null, clearTimeout(timeout);
-    form.value = options[form.i.selectedIndex].value;
-  };
-  form.value = options[form.i.selectedIndex].value;
-  return form;
-}*/
+const orderFun = {
+  byId: (a, b) => d3.ascending(a.id, b.id),
+  byLabel: (a, b) => d3.ascending(a.label, b.label),
+  byGroup: (a, b) => d3.ascending(a.group, b.group),
+  byPathNum: (a, b) => d3.ascending(a.pathNum, b.pathNum),
+}
 
 d3.json("huawei.json").then(function(data) {
   console.log('【数据】',data)
   graph = createGraph(data)
 
   function createGraph(data){
-    const nodes = data.nodes.map(({id, group}) => ({
-      id,
+    const nodes = data.nodes.map(d => ({
+      id:d.id,
       sourceLinks: [],
       targetLinks: [],
-      group
+      group:d.group,
+      pathNum:0,
+      data:d
     }));
+
+    //计算pathNum
+
+    //计算degree
 
     const nodeById = new Map(nodes.map(d => [d.id, d]));
 
-    const links = data.edges.map(({source, target, weight}) => ({
-      source: nodeById.get(source),
-      target: nodeById.get(target),
-      value: weight
-    }));
+    const links = data.edges.map(edge => {
+      const sourceNode = nodeById.get(edge.source);
+      const targetNode = nodeById.get(edge.target);
+      sourceNode.pathNum ++;
+      targetNode.pathNum ++;
 
-    for (let link of links) {
-      const {source, target, value} = link;
-      source.sourceLinks.push(link);
-      target.targetLinks.push(link);
-    }
+      const link = {
+        source: sourceNode,
+        target: targetNode,
+        value: edge.weight,
+        data: edge
+      }
+
+      sourceNode.sourceLinks.push(link);
+      targetNode.targetLinks.push(link);
+
+      return link
+    });
 
     return {nodes, links};
   }
+
 
   color = d3.scaleOrdinal(graph.nodes.map(d => d.group).sort(d3.ascending), d3.schemeCategory10)
   step = 14
@@ -106,7 +107,7 @@ d3.json("huawei.json").then(function(data) {
           .attr("x", -6)
           .attr("dy", "0.35em")
           .attr("fill", d => d3.lab(color(d.group)).darker(2))
-          .text(d => d.id))
+          .text(d => d.data.label))
       .call(g => g.append("circle")
           .attr("r", 3)
           .attr("fill", d => color(d.group)));
@@ -144,8 +145,9 @@ d3.json("huawei.json").then(function(data) {
         path.classed("primary", false).order();
       });
 
-  /*function update() {
-    y.domain(graph.nodes.sort(viewofOrder.value).map(d => d.id));
+  function update(sortFun) {
+    console.log(sortFun)
+    y.domain(graph.nodes.sort(sortFun).map(d => d.id));
 
     const t = svg.transition()
         .duration(750);
@@ -166,7 +168,18 @@ d3.json("huawei.json").then(function(data) {
         .attr("y", d => y(d.id) - step / 2);
   }
 
-  viewofOrder.addEventListener("input", update);
+  const callUpdate = function(sortFun){
+    return () => update(sortFun)
+  }
+
+  document.getElementById("a").addEventListener("click",callUpdate(orderFun.byId));
+  document.getElementById("b").addEventListener("click",callUpdate(orderFun.byGroup));
+  document.getElementById("c").addEventListener("click",callUpdate(orderFun.byLabel));
+  document.getElementById("d").addEventListener("click",callUpdate(orderFun.byPathNum));
+
+
+
+  /*viewofOrder.addEventListener("input", update);
   invalidation.then(() => viewofOrder.removeEventListener("input", update));*/
 
   function arc(d) {

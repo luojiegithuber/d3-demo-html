@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
-<svg width="960" height="500" viewBox="-480 -250 960 500">
+<svg id='mainsvg' width="960" height="500" viewBox="-480 -250 960 500">
 
 </svg>
 <script src="https://d3js.org/d3.v6.js"></script>
@@ -31,7 +31,7 @@ d3.json("huawei.json").then(function(data) {
         return colors(d.degree);
   }
 
-  const svg = d3.select("svg")
+  const svg = d3.select("#mainsvg")
 
 
 
@@ -54,87 +54,7 @@ d3.json("huawei.json").then(function(data) {
 
 
 
-function packingNode(data){
 
-  const nodes = data.nodes;
-  const edges = data.edges;
-  function Node(obj){
-    this.id = obj.id;
-    this.pathNum = 0;
-    this.data = obj;
-    this.incoming = [];
-    this.outgoing = [];
-  }
-
-  const allNodes = [];
-
-  allNodeMap = new Map(nodes.map(d =>{ 
-    const node = new Node(d);
-    allNodes.push(node)
-    return [d.id,node]
-  }))
-
-  edges.forEach(edge => {
-    const sourceNode = allNodeMap.get(edge.source);
-    const targetNode = allNodeMap.get(edge.target);
-
-    sourceNode.pathNum ++;
-    targetNode.pathNum ++;
-  })
-
-  return allNodes;
-
-}
-
-function hierarchyNodeByDegree(nodes){
-  
-  const allArr = [];
-  let curPathNum = -1;
-  let samePathNumArr=[];
-  let headNode;
-  let degree = -1;
-
-  nodes.forEach(d =>{
-    if(curPathNum !== d.pathNum){
-      allArr.push(samePathNumArr);
-      samePathNumArr = [];
-      degree++;
-      d.degree = degree;
-      samePathNumArr.push(d)
-      curPathNum = d.pathNum;
-    }else{
-      d.degree = degree;
-      samePathNumArr.push(d)
-    }
-  })
-  
-  allArr.push(samePathNumArr)
-  allArr.shift()
-  console.log('allArr',allArr);
-
-
-  return allArr
-  
-}
-
-
-//这一步根据import生成incoming
-function bilink(nodes,edges) {
-
-
-  console.log('【根】',nodes,edges)
-  edges.forEach(edge => {
-    const sourceNode = allNodeMap.get(edge.source);
-    const targetNode = allNodeMap.get(edge.target);
-
-    const path = [sourceNode,targetNode]
-
-    sourceNode.outgoing.push(path);
-    targetNode.incoming.push(path)
-  })
-
-
-}
 
 
 console.log('所有的节点',allNodes)
@@ -162,6 +82,8 @@ var node_g = svg
     .style('fill', '#000')
     .style('font-size', '15px')
     .style('text-anchor', 'middle')
+    .on("mouseover", overed)
+    .on("mouseout", outed)
     .text(function (d) {
       return (d.id)
     })
@@ -257,7 +179,87 @@ function ticked() {
 
 })
 
+//额外封装节点
+function packingNode(data){
+
+  const nodes = data.nodes;
+  const edges = data.edges;
+  function Node(obj){
+    this.id = obj.id;
+    this.pathNum = 0;
+    this.data = obj;
+    this.incoming = [];
+    this.outgoing = [];
+  }
+
+  const allNodes = [];
+
+  allNodeMap = new Map(nodes.map(d =>{ 
+    const node = new Node(d);
+    allNodes.push(node)
+    return [d.id,node]
+  }))
+
+  edges.forEach(edge => {
+    const sourceNode = allNodeMap.get(edge.source);
+    const targetNode = allNodeMap.get(edge.target);
+
+    sourceNode.pathNum ++;
+    targetNode.pathNum ++;
+  })
+
+  return allNodes;
+
+}
+
+//数据分层
+function hierarchyNodeByDegree(nodes){
+  
+  const allArr = [];
+  let curPathNum = -1;
+  let samePathNumArr=[];
+  let headNode;
+  let degree = -1;
+
+  nodes.forEach(d =>{
+    if(curPathNum !== d.pathNum){
+      allArr.push(samePathNumArr);
+      samePathNumArr = [];
+      degree++;
+      d.degree = degree;
+      samePathNumArr.push(d)
+      curPathNum = d.pathNum;
+    }else{
+      d.degree = degree;
+      samePathNumArr.push(d)
+    }
+  })
+  
+  allArr.push(samePathNumArr)
+  allArr.shift()
+  console.log('allArr',allArr);
 
 
+  return allArr
+  
+}
+
+//这一步根据import生成incoming
+function bilink(nodes,edges) {
+
+
+  console.log('【根】',nodes,edges)
+  edges.forEach(edge => {
+    const sourceNode = allNodeMap.get(edge.source);
+    const targetNode = allNodeMap.get(edge.target);
+
+    const path = [sourceNode,targetNode]
+
+    sourceNode.outgoing.push(path);
+    targetNode.incoming.push(path)
+  })
+
+
+}
 
 </script>
