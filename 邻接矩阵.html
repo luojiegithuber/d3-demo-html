@@ -36,10 +36,7 @@ d3.json("huawei.json").then(function(data) {
     .domain(data.names)
     .rangeRound([margin.left, margin.left + data.names.length * 15])
 
- /* yAxis = g => g
-    .attr("transform", `translate(${margin.left},0)`)
-    .call(d3.axisLeft(y).tickSize(0))
-    .call(g => g.select(".domain").remove())*/
+
   yAxis = g => g
     .attr("transform", `translate(${margin.left},0)`)
     .call(d3.axisLeft(y).tickSize(0))

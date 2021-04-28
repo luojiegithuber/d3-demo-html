@@ -168,6 +168,8 @@ d3.json("huawei.json").then(function(data) {
         .attr("y", d => y(d.id) - step / 2);
   }
 
+  // 暴露给外界自行调用更新函数
+  // 当然同时暴露了orderFun
   const callUpdate = function(sortFun){
     return () => update(sortFun)
   }

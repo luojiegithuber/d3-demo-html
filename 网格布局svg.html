@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>华为捆图</title>
+    <svg width="800" height="500"></svg>
+    <style>
+
+ 
+    </style>
+ 
+</head>
+<body>
+    <script src="https://d3js.org/d3.v6.js"></script>
+
+<script>
+const color = d3.scaleOrdinal(d3.schemeCategory10);
+const allNodeById = {};
+const radius = 20; 
+
+function Link (edge) {
+  this.source = allNodeById[edge.source];
+  this.target = allNodeById[edge.target];
+  this.weight = edge.weight;
+  this.data = edge;
+}
+
+function Node (node) {
+  this.id = node.id;
+  this.group = node.group;
+  this.label = node.label;
+  this.data = node;
+  this.x = 0;
+  this.y = 0;
+  this.children = null;
+  this.pathNum = 0;
+  this.incoming = [];
+  this.outgoing = [];
+}
+
+
+function createNodeCoordinate (nodes, xNum, yNum) {
+  const horizontalWidth = 80;
+  const verticalWidth = 80;
+  return nodes.map((d, index) => {
+    const node = new Node(d);
+    node.x = node.x + (index % xNum) * horizontalWidth
+    node.y = node.y + Math.floor(index / xNum) * verticalWidth
+    allNodeById[node.id] = node;
+    return node
+  })
+}
+
+function createLinkCoordinate (edges) {
+  return edges.map((edge, index) => {
+    const sourceNode = allNodeById[edge.source];
+    const targetNode = allNodeById[edge.target];
+
+    sourceNode.pathNum ++;
+    targetNode.pathNum ++;
+
+    const newEdge = new Link(edge);
+    sourceNode.outgoing.push(newEdge);
+    targetNode.incoming.push(newEdge);
+
+    return newEdge;
+  })
+}
+
+colorin = "#00f"
+colorout = "#f00"
+colornone = "#ccc"
+width = 954
+
+
+var data  = null;
+
+d3.json("huawei.json").then(function(data) {
+  const nodes = createNodeCoordinate(data.nodes,5,4); 
+  const edges = createLinkCoordinate(data.edges)
+
+  const svg = d3.select("svg")
+      .attr("viewBox", [-width / 2, -width / 2, width, width])
+      .call(d3.zoom()
+        .scaleExtent([1 / 2, 4])
+        .on("zoom", e => {
+          svg.attr("transform", e.transform);
+        }))
+      .append('g')
+
+    const edgeSvg = svg.append("g")
+      .selectAll("g")
+      .data(edges)
+      .enter()
+      .append("line")
+        .attr("x1", d=>allNodeById[d.source.id].x)
+        .attr("y1", d=>allNodeById[d.source.id].y)
+        .attr("x2", d=>allNodeById[d.target.id].x)
+        .attr("y2", d=>allNodeById[d.target.id].y)
+        .attr("stroke", colornone)
+        .attr("stroke-width", "1px")
+        .each(function(d) { d.link = this; });
+
+    var nodeSvg = svg.append("g")
+      .attr("font-family", "sans-serif")
+      .attr("font-size", 30)
+      .selectAll("g")
+      .data(nodes)
+
+
+    nodeSvg = nodeSvg.enter().append("g")
+      .attr("transform", d => `translate(${d.x},${d.y})`)
+      .on("mouseover", overed)
+      .on("mouseout", outed)
+      .call(d3.drag()
+      //.subject(dragsubject)
+      //.on('start', dragstarted)
+      .on('drag', dragged))
+      //.on('end', dragended))
+
+
+  function dragsubject (e) {
+    // return simulation.find(e.x, e.y); //找最近的节点
+    let i;
+    let x = e.x;
+    let y = e.y;
+    let dx;
+    let dy;
+    for (i = nodes.length - 1; i >= 0; --i) {
+      const node = nodes[i];
+      dx = x - node.x;
+      dy = y - node.y;
+
+      if (dx * dx + dy * dy < radius * radius) {
+        node.x = x;
+        node.y = y;
+        nodeSelectChange(node)
+        // curSelectedNode = node;
+        return node;
+      }
+    }
+
+    console.log('你拖动了画布')
+  }
+
+  function nodeSelectChange (d) {
+    console.log('在网格布局中选择了节点', d.data);
+    //callFunSelectNode(d.data)
+  }
+
+
+
+function dragged(e,d) {
+  d.x = e.x;
+  d.y = e.y;
+  ticked();
+}
+
+
+
+
+    nodeSvg.append('circle')
+      .style('fill', d => color(d.group))
+      .style('stroke', '#000')
+      .attr('r', 20)
+
+
+    nodeSvg.append('text')
+      .attr("transform", d => `translate(0,10)`)
+      .style('fill', '#000')
+      .style('font-size', '30px')
+      .style('text-anchor', 'middle')
+      .text(function (d) {
+        return (d.id)
+      })
+      .each(function(d) { d.text = this; })
+      
+
+
+
+
+
+  function overed(event, d) {
+    nodeSvg.style("cursor", "pointer"); 
+    edgeSvg.style("mix-blend-mode", null);
+    d3.select(this).attr("font-weight", "bold");
+    d3.selectAll(d.incoming.map(d => d.link)).attr("stroke", colorin).raise();
+    //d3.selectAll(d.incoming.map(d => d.text)).attr("fill", colorin).attr("font-weight", "bold");
+    d3.selectAll(d.outgoing.map(d => d.link)).attr("stroke", colorout).raise();
+    //d3.selectAll(d.outgoing.map(d => d.text)).attr("fill", colorout).attr("font-weight", "bold");
+  }
+
+  function outed(event, d) {
+    nodeSvg.style("cursor", "pointer"); 
+    edgeSvg.style("mix-blend-mode", "multiply");
+    d3.select(this).attr("font-weight", null);
+    d3.selectAll(d.incoming.map(d => d.link)).attr("stroke", colornone);
+    //d3.selectAll(d.incoming.map(([d]) => d.text)).attr("fill", null).attr("font-weight", null);
+    d3.selectAll(d.outgoing.map(d => d.link)).attr("stroke", colornone);
+    //d3.selectAll(d.outgoing.map(([, d]) => d.text)).attr("fill", null).attr("font-weight", null);
+  }
+
+
+  function ticked() {
+
+    nodeSvg.attr("transform", function (d) {
+          return "translate(" + d.x + "," + d.y + ")";
+      });
+
+    //if(edge)edge.selectAll("path").remove()
+    edgeSvg
+      .attr("x1", d=>allNodeById[d.source.id].x)
+      .attr("y1", d=>allNodeById[d.source.id].y)
+      .attr("x2", d=>allNodeById[d.target.id].x)
+      .attr("y2", d=>allNodeById[d.target.id].y)
+
+
+  }
+
+
+
+})
+
+
+
+
+</script>
+ 
+</body>
+</html>

@@ -32,9 +32,6 @@ d3.json("huawei.json").then(function(data) {
     })
 
     
-
-
-
     return  Object.assign(matrix , {
       names: data.nodes.map(d => d.label),
       colors: ["#3957ff", "#d3fe14", "#c9080a", "#fec7f8", "#0b7b3e", "#0bf0e9", "#c203c8", "#fd9b39", "#888593", "#906407", "#98ba7f", "#fe6794", "#10b0ff", "#ac7bff", "#fee7c0", "#964c63", "#1da49c", "#0ad811", "#bbd9fd", "#fe6cfe" ]
